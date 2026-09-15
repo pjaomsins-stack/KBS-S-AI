@@ -272,14 +272,6 @@ footer b{color:#fff;font-family:"Bai Jamjuree",sans-serif}
       <div><b id="stat3v">0</b><span id="stat3l">แผนกที่ยัง 0%</span></div>
     </div>
 
-    <div class="toolbar" style="margin-top:14px">
-      <span style="flex:1;font-size:12px;color:var(--slate);align-self:center">บันทึกไฟล์นี้พร้อมข้อมูลล่าสุด (สถานะ certificate + สื่อจาก AI) เพื่อส่งต่อให้คนอื่นเปิดดูได้</span>
-      <button class="export-btn" id="saveHtmlBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
-        บันทึกเป็นไฟล์ HTML
-      </button>
-    </div>
-
     <div id="panel-overview" class="tabpanel">
       <div class="toolbar">
         <button class="export-btn" id="exportBtn">
@@ -806,43 +798,6 @@ document.getElementById('mediaGrid').addEventListener('click', () => {
 });
 
 updateStatsBar('overview');
-
-/* ============== SAVE HTML SNAPSHOT (bakes current cert status + media into a downloadable file) ============== */
-document.getElementById('saveHtmlBtn').addEventListener('click', () => {
-  const board = document.getElementById('board');
-  const deptDetails = document.getElementById('deptDetails');
-  const certStatusList = document.getElementById('certStatusList');
-  const boardBackup = board.innerHTML;
-  const deptDetailsBackup = deptDetails.innerHTML;
-  const certListBackup = certStatusList.innerHTML;
-
-  // clear append-based containers so the saved copy doesn't duplicate rows on next open
-  board.innerHTML = '';
-  deptDetails.innerHTML = '';
-  certStatusList.innerHTML = '';
-
-  let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-
-  // restore the live page immediately
-  board.innerHTML = boardBackup;
-  deptDetails.innerHTML = deptDetailsBackup;
-  certStatusList.innerHTML = certListBackup;
-
-  // bake current data as the starting seed so it works even with empty localStorage on another device
-  html = html.replace('let certStatus = loadCertStatus();', 'let certStatus = ' + JSON.stringify(certStatus) + ';');
-  html = html.replace('let mediaEntries = loadMedia();', 'let mediaEntries = ' + JSON.stringify(mediaEntries) + ';');
-
-  const blob = new Blob([html], {type: 'text/html;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const stamp = new Date().toISOString().slice(0,10);
-  a.download = `ai-pass-dashboard-${stamp}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
 
 </script>
 </body>

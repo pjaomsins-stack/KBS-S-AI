@@ -231,6 +231,12 @@ h1{font-size:clamp(24px,3vw,32px);font-weight:700;margin-bottom:8px}
 .media-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .media-card-title{font-weight:700;font-size:13.5px}
 .media-card-person{font-size:11.5px;color:#9BB2C1;margin-top:2px}
+.proj-status{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.proj-status.plan{background:#EEF2F6;color:#5A7285}
+.proj-status.doing{background:#FFF3E0;color:#C66A10}
+.proj-status.done{background:rgba(27,143,130,.12);color:var(--mint)}
+.proj-meta{font-size:12px;color:var(--slate);line-height:1.5}
+.proj-meta b{color:var(--ink);font-weight:600}
 .media-type-badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--sky);color:var(--blue-dd);white-space:nowrap;flex-shrink:0}
 .media-card-note{font-size:12.5px;color:var(--slate);line-height:1.5}
 .media-card-actions{display:flex;gap:8px;margin-top:2px}
@@ -267,6 +273,7 @@ footer b{color:#fff;font-family:"Bai Jamjuree",sans-serif}
     <a href="#" class="nav-tab on" data-tab="overview"><span class="ico">📊</span>ภาพรวม</a>
     <a href="#" class="nav-tab" data-tab="certstatus"><span class="ico">🎓</span>สถานะใบ Certificate</a>
     <a href="#" class="nav-tab" data-tab="media"><span class="ico">✨</span>สื่อจาก AI</a>
+    <a href="#" class="nav-tab" data-tab="project"><span class="ico">🚀</span>AI โครงการ</a>
   </nav>
   <div class="foot">
     <div class="st"><span class="dot"></span>ระบบทำงานปกติ</div>
@@ -407,6 +414,51 @@ footer b{color:#fff;font-family:"Bai Jamjuree",sans-serif}
       <div id="mediaGrid" class="media-grid"></div>
     </div>
 
+    <div id="panel-project" class="tabpanel" style="display:none">
+      <div class="section-head">
+        <h2>AI โครงการ</h2>
+        <div class="note">โครงการปรับปรุงงานที่พนักงานนำ AI มาใช้ พร้อมสถานะและผลลัพธ์</div>
+      </div>
+
+      <div id="projDeptBoard"></div>
+      <div id="projSectionBoard"></div>
+
+      <div class="cert-toolbar">
+        <input type="text" id="projSearch" class="cert-search" placeholder="ค้นหาชื่อคนหรือชื่อโครงการ...">
+        <div class="cert-filter" id="projStatusFilter">
+          <button class="filter-btn active" data-status="all">ทั้งหมด</button>
+          <button class="filter-btn" data-status="วางแผน">วางแผน</button>
+          <button class="filter-btn" data-status="กำลังดำเนินการ">กำลังดำเนินการ</button>
+          <button class="filter-btn" data-status="เสร็จสิ้น">เสร็จสิ้น</button>
+        </div>
+        <div class="cert-stat"><span id="projCount">0</span> โครงการ จาก <span id="projPeopleCount">0</span> คน</div>
+      </div>
+
+      <button class="export-btn" id="addProjBtn" style="margin-bottom:18px;">+ เพิ่มโครงการใหม่</button>
+
+      <div id="projForm" class="media-form" style="display:none">
+        <div class="media-form-row"><label>ผู้รับผิดชอบโครงการ</label><select id="projEmployee"></select></div>
+        <div class="media-form-row"><label>ชื่อโครงการ</label><input type="text" id="projTitle" placeholder="เช่น ระบบแจ้งเตือนซ่อมบำรุงด้วย AI"></div>
+        <div class="media-form-row">
+          <label>สถานะ</label>
+          <select id="projStatus">
+            <option value="วางแผน">วางแผน</option>
+            <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+            <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+          </select>
+        </div>
+        <div class="media-form-row"><label>เครื่องมือ AI ที่ใช้ (ถ้ามี)</label><input type="text" id="projTool" placeholder="เช่น Claude, ChatGPT, Copilot"></div>
+        <div class="media-form-row"><label>ผลลัพธ์ / ประโยชน์ (ถ้ามี)</label><textarea id="projResult" rows="2" placeholder="เช่น ลดเวลาทำรายงานจาก 2 ชม. เหลือ 15 นาที"></textarea></div>
+        <div class="media-form-row"><label>ลิงก์ (ถ้ามี)</label><input type="text" id="projLink" placeholder="https://..."></div>
+        <div class="media-form-actions">
+          <button class="export-btn" id="projSaveBtn">บันทึก</button>
+          <button class="cert-btn-link" id="projCancelBtn">ยกเลิก</button>
+        </div>
+      </div>
+
+      <div id="projGrid" class="media-grid"></div>
+    </div>
+
   </div>
 </main>
 
@@ -428,8 +480,9 @@ document.querySelectorAll('.nav-tab').forEach(a=>a.addEventListener('click',(e)=
   document.getElementById('panel-overview').style.display=(tab==='overview')?'':'none';
   document.getElementById('panel-certstatus').style.display=(tab==='certstatus')?'':'none';
   document.getElementById('panel-media').style.display=(tab==='media')?'':'none';
+  document.getElementById('panel-project').style.display=(tab==='project')?'':'none';
   const certCell = document.getElementById('certTotalCell');
-  certCell.style.display = (tab === 'media') ? 'none' : '';
+  certCell.style.display = (tab === 'media' || tab === 'project') ? 'none' : '';
   side.classList.remove('open');
   if(typeof updateStatsBar === 'function') updateStatsBar(tab);
 }));
@@ -1032,6 +1085,14 @@ function updateStatsBar(tab){
     setStat(1, peopleCount, 'คนที่ร่วมส่งผลงาน');
     setStat(2, websiteCount, 'เว็บไซต์');
     setStat(3, otherCount, 'ความรู้ + การ์ตูน + อื่นๆ');
+  } else if(tab === 'project'){
+    const people = new Set(projectEntries.map(e => e.employeeKey)).size;
+    setStat(0, projectEntries.length, 'โครงการทั้งหมด');
+    setStat(1, people, 'คนที่มีโครงการ');
+    const deptWith = new Set(projectEntries.map(e => e.employeeKey.split('::')[0])).size;
+    const totalPeople = certEmployees.length;
+    setStat(2, `${deptWith}/${data.length}`, 'แผนกที่มีโครงการ');
+    setStat(3, `${projectEntries.length}/${totalPeople}`, 'โครงการเทียบเป้า (1/คน)');
   }
 };
 
@@ -1048,6 +1109,114 @@ document.getElementById('mediaSaveBtn').addEventListener('click', () => {
 document.getElementById('mediaGrid').addEventListener('click', () => {
   setTimeout(() => { if(document.querySelector('.nav-tab.on')?.dataset.tab === 'media') updateStatsBar('media'); }, 0);
 });
+
+/* ============== AI PROJECTS ============== */
+const PROJECT_KEY = 'aipass-ai-projects-v1';
+const projectSeed = [{"id": 2000, "employeeKey": "150103::น.ส.พนิดา อ่องพิมาย", "employeeName": "น.ส.พนิดา อ่องพิมาย", "dept": "แผนกหม้อเคี่ยวดิบ", "title": "AI หม้อเคี่ยว", "status": "ไม่ระบุ", "tool": "", "result": "", "link": "", "addedAt": "2026-09-26T00:00:00.000Z"}, {"id": 2001, "employeeKey": "150100::น.ส.ไพจิตร จันทะผล", "employeeName": "น.ส.ไพจิตร จันทะผล", "dept": "งานโครงการก่อสร้างโรงงานน้ำตาลฯ (วิศวกร)", "title": "Parameter control Dashboard", "status": "ไม่ระบุ", "tool": "", "result": "", "link": "", "addedAt": "2026-09-26T00:00:00.000Z"}, {"id": 2002, "employeeKey": "150100::น.ส.ไพจิตร จันทะผล", "employeeName": "น.ส.ไพจิตร จันทะผล", "dept": "งานโครงการก่อสร้างโรงงานน้ำตาลฯ (วิศวกร)", "title": "Power app Deviation", "status": "ไม่ระบุ", "tool": "", "result": "", "link": "", "addedAt": "2026-09-26T00:00:00.000Z"}, {"id": 2003, "employeeKey": "150100::น.ส.ไพจิตร จันทะผล", "employeeName": "น.ส.ไพจิตร จันทะผล", "dept": "งานโครงการก่อสร้างโรงงานน้ำตาลฯ (วิศวกร)", "title": "บันทึกการเตรียมเชื้อนำตาล Power app", "status": "ไม่ระบุ", "tool": "", "result": "", "link": "", "addedAt": "2026-09-26T00:00:00.000Z"}, {"id": 2004, "employeeKey": "150100::น.ส.ไพจิตร จันทะผล", "employeeName": "น.ส.ไพจิตร จันทะผล", "dept": "งานโครงการก่อสร้างโรงงานน้ำตาลฯ (วิศวกร)", "title": "รายงานตรวจสอบการปั่นน้ำตาล A,B,C", "status": "ไม่ระบุ", "tool": "", "result": "", "link": "", "addedAt": "2026-09-26T00:00:00.000Z"}, {"id": 2005, "employeeKey": "150100::น.ส.ไพจิตร จันทะผล", "employeeName": "น.ส.ไพจิตร จันทะผล", "dept": "งานโครงการก่อสร้างโรงงานน้ำตาลฯ (วิศวกร)", "title": "ปริมาณการใช้ปูนขาว Power app", "status": "ไม่ระบุ", "tool": "", "result": "", "link": "", "addedAt": "2026-09-26T00:00:00.000Z"}];
+/* projectSeed comes from the Excel sheet "AI โครงการ"; entries added via the form are kept locally and appended */
+function loadLocalProjects(){
+  try { return JSON.parse(localStorage.getItem(PROJECT_KEY) || '[]').map(p => ({...p, local:true})); } catch(e){ return []; }
+}
+function saveProjects(arr){
+  try { localStorage.setItem(PROJECT_KEY, JSON.stringify(arr.filter(p => p.local))); } catch(e){}
+}
+let projectEntries = projectSeed.concat(loadLocalProjects());
+let projActiveFilter = 'all';
+const PROJ_STATUS_CLASS = {'วางแผน':'plan','กำลังดำเนินการ':'doing','เสร็จสิ้น':'done','ไม่ระบุ':'plan'};
+
+function populateProjEmployeeSelect(){
+  const sel = document.getElementById('projEmployee');
+  sel.innerHTML = '';
+  Object.keys(certByDept).forEach(deptName => {
+    const og = document.createElement('optgroup');
+    og.label = deptName;
+    certByDept[deptName].employees.forEach(e => {
+      const o = document.createElement('option');
+      o.value = e.key; o.textContent = e.name; og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+}
+function projCardHTML(p){
+  const link = p.link ? `<a class="cert-btn-link" href="${escapeHTML(p.link)}" target="_blank" rel="noopener">เปิดลิงก์</a>` : '';
+  return `
+    <div class="media-card">
+      <div class="media-card-top">
+        <div>
+          <div class="media-card-title">${escapeHTML(p.title)}</div>
+          <div class="media-card-person">${escapeHTML(p.employeeName)} · ${escapeHTML(p.dept)}</div>
+        </div>
+        <span class="proj-status ${PROJ_STATUS_CLASS[p.status]||'plan'}">${escapeHTML(p.status)}</span>
+      </div>
+      ${p.tool ? `<div class="proj-meta"><b>เครื่องมือ AI:</b> ${escapeHTML(p.tool)}</div>` : ''}
+      ${p.result ? `<div class="media-card-note">${escapeHTML(p.result)}</div>` : ''}
+      <div class="media-card-actions">
+        ${link}
+        ${p.local ? `<button class="cert-btn-link proj-del-btn" data-id="${p.id}">ลบ</button>` : ''}
+      </div>
+    </div>`;
+}
+function renderProjGrid(){
+  const q = document.getElementById('projSearch').value.trim().toLowerCase();
+  const list = projectEntries.filter(p =>
+    (!q || (p.employeeName + ' ' + p.title).toLowerCase().includes(q)) &&
+    (projActiveFilter === 'all' || p.status === projActiveFilter));
+  const grid = document.getElementById('projGrid');
+  grid.innerHTML = list.length ? list.slice().reverse().map(projCardHTML).join('')
+    : `<div class="empty-note">ยังไม่มีโครงการที่บันทึกไว้ในหมวดนี้ — กด "+ เพิ่มโครงการใหม่" เพื่อเริ่มบันทึก</div>`;
+  grid.querySelectorAll('.proj-del-btn').forEach(b => b.addEventListener('click', () => {
+    if(!confirm('ลบโครงการนี้?')) return;
+    projectEntries = projectEntries.filter(p => String(p.id) !== b.dataset.id);
+    saveProjects(projectEntries); refreshProjects();
+  }));
+}
+function renderProjBoards(){
+  /* Actual = number of projects; Plan = target of 1 project per active employee */
+  const perEmp = {};
+  projectEntries.forEach(p => { perEmp[p.employeeKey] = (perEmp[p.employeeKey] || 0) + 1; });
+  const rows = data.map(d => ({
+    name: d.name, code: d.code, plan: d.active,
+    actual: projectEntries.filter(p => p.employeeKey.split('::')[0] === d.code).length
+  })).sort((a,b) => (b.plan ? b.actual/b.plan : 0) - (a.plan ? a.actual/a.plan : 0));
+  renderGroupedBarChart('projDeptBoard', 'AI', 'จำนวน AI โครงการ แยกตามแผนก (เป้าหมาย 1 โครงการ/คน)', rows);
+  renderGroupedBarChart('projSectionBoard', 'AI', 'จำนวน AI โครงการ แยกตามส่วนงาน (เป้าหมาย 1 โครงการ/คน)', buildSectionRows(e => perEmp[e.key] || 0, 1));
+}
+function refreshProjects(){
+  document.getElementById('projCount').textContent = projectEntries.length;
+  document.getElementById('projPeopleCount').textContent = new Set(projectEntries.map(p => p.employeeKey)).size;
+  renderProjGrid(); renderProjBoards();
+  if(document.querySelector('.nav-tab.on')?.dataset.tab === 'project') updateStatsBar('project');
+}
+document.getElementById('addProjBtn').addEventListener('click', () => {
+  const f = document.getElementById('projForm');
+  const show = f.style.display === 'none';
+  if(show) populateProjEmployeeSelect();
+  f.style.display = show ? '' : 'none';
+});
+document.getElementById('projCancelBtn').addEventListener('click', () => { document.getElementById('projForm').style.display = 'none'; });
+document.getElementById('projSaveBtn').addEventListener('click', () => {
+  const emp = certEmployees.find(e => e.key === document.getElementById('projEmployee').value);
+  const title = document.getElementById('projTitle').value.trim();
+  if(!emp || !title){ alert('กรุณาเลือกผู้รับผิดชอบและใส่ชื่อโครงการ'); return; }
+  projectEntries.push({
+    id: Date.now(), employeeKey: emp.key, employeeName: emp.name, dept: emp.dept, title,
+    status: document.getElementById('projStatus').value,
+    tool: document.getElementById('projTool').value.trim(),
+    result: document.getElementById('projResult').value.trim(),
+    link: document.getElementById('projLink').value.trim(),
+    addedAt: new Date().toISOString(), local: true
+  });
+  saveProjects(projectEntries);
+  ['projTitle','projTool','projResult','projLink'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('projForm').style.display = 'none';
+  refreshProjects();
+});
+document.getElementById('projSearch').addEventListener('input', renderProjGrid);
+document.querySelectorAll('#projStatusFilter .filter-btn').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#projStatusFilter .filter-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); projActiveFilter = b.dataset.status; renderProjGrid();
+}));
+refreshProjects();
 
 renderRegSectionBoard();
 updateStatsBar('overview');
